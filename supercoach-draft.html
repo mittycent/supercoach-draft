@@ -1,0 +1,1609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NRL Supercoach Draft Board</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #222535;
+    --border: #2e3148;
+    --text: #e8eaf0;
+    --muted: #8890a8;
+    --accent: #4f7cff;
+    --accent2: #7c4fff;
+    --green: #2ecc71;
+    --red: #e74c3c;
+    --yellow: #f1c40f;
+    --drafted-bg: #1a1d27;
+    --drafted-text: #444860;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    background: linear-gradient(135deg, var(--surface) 0%, #1e2240 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  header h1 {
+    font-size: 20px;
+    font-weight: 700;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.3px;
+  }
+
+  header p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .header-stats {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+  }
+
+  .stat-chip {
+    text-align: center;
+  }
+
+  .stat-chip .val {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .stat-chip .lbl {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* CONTROLS */
+  .controls {
+    padding: 14px 24px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .pos-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .pos-btn {
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.15s;
+  }
+
+  .pos-btn:hover { border-color: var(--accent); color: var(--text); }
+
+  .pos-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .search-box {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-size: 13px;
+    outline: none;
+    width: 180px;
+    transition: border-color 0.15s;
+  }
+
+  .search-box:focus { border-color: var(--accent); }
+  .search-box::placeholder { color: var(--muted); }
+
+  .toggle-drafted {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 12px;
+    user-select: none;
+  }
+
+  .toggle-drafted input { accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer; }
+
+  .replacement-info {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 10px;
+  }
+
+  /* TABLE */
+  .table-wrap {
+    overflow-x: auto;
+    padding: 0 24px 24px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 16px;
+  }
+
+  thead th {
+    background: var(--surface);
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--border);
+    cursor: pointer;
+    white-space: nowrap;
+    user-select: none;
+  }
+
+  thead th:hover { color: var(--text); }
+  thead th.sorted { color: var(--accent); }
+  thead th .sort-icon { margin-left: 4px; opacity: 0.5; }
+  thead th.sorted .sort-icon { opacity: 1; }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+
+  tbody tr:hover { background: var(--surface2); }
+
+  tbody tr.drafted {
+    opacity: 0.35;
+  }
+
+  tbody tr.drafted td { color: var(--drafted-text); }
+
+  td {
+    padding: 10px 12px;
+    vertical-align: middle;
+  }
+
+  .rank-cell {
+    font-weight: 700;
+    color: var(--muted);
+    font-size: 13px;
+    width: 44px;
+  }
+
+  .rank-1 { color: #ffd700; }
+  .rank-2 { color: #c0c0c0; }
+  .rank-3 { color: #cd7f32; }
+
+  .player-name {
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+  }
+
+  .team-badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+  }
+
+  .pos-tag {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    margin-right: 3px;
+    white-space: nowrap;
+  }
+
+  .score-cell { font-size: 13px; color: var(--muted); }
+
+  .weighted-cell {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text);
+  }
+
+  .vorp-cell {
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  .vorp-pos { color: var(--green); }
+  .vorp-neg { color: var(--red); }
+
+  .vorp-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .vorp-bar {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--green);
+    min-width: 2px;
+    max-width: 120px;
+    transition: width 0.3s;
+  }
+
+  /* 3-STATE DRAFT BUTTON */
+  .draft-btn {
+    width: 46px;
+    height: 22px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-align: center;
+    transition: all 0.15s;
+  }
+  .draft-btn:hover { border-color: var(--accent); color: var(--text); }
+  .draft-btn.mine { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .draft-btn.opp  { background: #d35400; border-color: #d35400; color: #fff; }
+
+  /* ROW STATES FOR DRAFTED PLAYERS */
+  tbody tr.drafted-mine td:not(:first-child) { opacity: 0.45; }
+  tbody tr.drafted-mine td:first-child { opacity: 1; }
+  tbody tr.drafted-opp  { opacity: 0.22; }
+  tbody tr.drafted-opp  td:first-child { opacity: 1; }
+  tbody tr.drafted-mine:hover td:not(:first-child) { opacity: 0.7; }
+  tbody tr.drafted-opp:hover  { opacity: 0.5; }
+
+  /* AVAILABILITY WARNING BADGE */
+  .avail-warn {
+    display: inline-block;
+    background: #c0392b;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 3px;
+    margin-left: 6px;
+    vertical-align: middle;
+    cursor: help;
+  }
+
+  /* TEAM COLORS — codes match nrlsupercoachstats.com */
+  .team-SYD { background: #e01a22; }           /* Sydney Roosters */
+  .team-MEL { background: #5a0591; }           /* Melbourne Storm */
+  .team-BRO { background: #6c003f; }           /* Brisbane Broncos */
+  .team-BRI { background: #6c003f; }           /* Brisbane (alt) */
+  .team-PTH { background: #003087; }           /* Penrith Panthers */
+  .team-PEN { background: #003087; }
+  .team-PAR { background: #004b9e; }           /* Parramatta Eels */
+  .team-NQC { background: #003087; }           /* North Queensland Cowboys */
+  .team-NQL { background: #003087; }
+  .team-MNL { background: #8b0000; }           /* Manly Sea Eagles */
+  .team-MAN { background: #8b0000; }
+  .team-CBR { background: #6ac9e0; color:#000; } /* Canberra Raiders */
+  .team-STH { background: #0d5c3c; }           /* South Sydney Rabbitohs */
+  .team-SOU { background: #0d5c3c; }
+  .team-GCT { background: #009fdf; color:#000; } /* Gold Coast Titans */
+  .team-GSW { background: #009fdf; color:#000; } /* Gold Coast (alt) */
+  .team-DOL { background: #cc2229; }           /* Dolphins */
+  .team-SHA { background: #00538c; }           /* Cronulla Sharks */
+  .team-CRO { background: #00538c; }
+  .team-NEW { background: #003366; }           /* Newcastle Knights */
+  .team-NZL { background: #808080; }           /* New Zealand Warriors */
+  .team-WAR { background: #808080; }
+  .team-STG { background: #e8192c; }           /* St George Illawarra */
+  .team-STI { background: #e8192c; }
+  .team-WST { background: #f6a800; color:#000; } /* Wests Tigers */
+  .team-TIG { background: #f6a800; color:#000; }
+  .team-BUL     { background: #0067b2; }       /* Canterbury Bulldogs */
+  .team-unknown { background: #444; }          /* Unknown/retired team */
+
+  .pos-FLB { background: #1a4a6e; border-color: #2a6a9e; color: #7ec8f0; }
+  .pos-CTW { background: #1e4a2a; border-color: #2e6a3a; color: #7ef0a0; }
+  .pos-HFB { background: #4a1a6e; border-color: #6a2a9e; color: #c07ef0; }
+  .pos-518 { background: #3d1a6e; border-color: #5d2a9e; color: #a07ef0; }
+  .pos-HOK { background: #6e1a3d; border-color: #9e2a5d; color: #f07eb8; }
+  .pos-FRF { background: #4a2a1a; border-color: #6a4a2a; color: #f0c07e; }
+  .pos-2RF { background: #4a1a1a; border-color: #6a2a2a; color: #f07e7e; }
+
+  /* VORP LEGEND */
+  .legend {
+    padding: 10px 24px;
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  /* IMPORT SECTION */
+  .import-section {
+    padding: 10px 24px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .import-section label {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .btn {
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.15s;
+  }
+
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .btn-danger:hover { border-color: var(--red); color: var(--red); }
+
+  .import-hint {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align: center;
+    padding: 60px 24px;
+    color: var(--muted);
+  }
+
+  .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    width: 90%;
+    max-width: 560px;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .modal h2 { font-size: 16px; margin-bottom: 8px; }
+  .modal p { font-size: 12px; color: var(--muted); margin-bottom: 12px; line-height: 1.5; }
+
+  .modal textarea {
+    width: 100%;
+    height: 200px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: monospace;
+    font-size: 12px;
+    padding: 10px;
+    outline: none;
+    resize: vertical;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 12px;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .btn-primary:hover { background: #3d6aee; border-color: #3d6aee; color: #fff; }
+
+  /* TABS */
+  .tab-bar {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--border);
+    padding: 0 24px;
+    background: var(--surface);
+  }
+
+  .tab-btn {
+    padding: 10px 20px;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.15s;
+  }
+
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* DRAFT BOARD LAYOUT — table + recommendations sidebar */
+  .draft-board-layout {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+  }
+
+  .draft-board-layout .table-wrap {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* RECOMMENDATIONS SIDEBAR */
+  .recs-panel {
+    width: 260px;
+    flex-shrink: 0;
+    padding: 16px 16px 24px;
+    border-left: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    max-height: 100vh;
+    overflow-y: auto;
+  }
+
+  .recs-panel h3 {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .rec-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+
+  .rec-item:last-child { border-bottom: none; }
+  .rec-item:hover { background: var(--surface2); margin: 0 -16px; padding: 8px 16px; border-radius: 4px; }
+
+  .rec-rank {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    min-width: 18px;
+    padding-top: 1px;
+  }
+
+  .rec-body { flex: 1; min-width: 0; }
+
+  .rec-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .rec-meta {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 3px;
+    flex-wrap: wrap;
+  }
+
+  .rec-vorp {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--green);
+  }
+
+  .rec-need {
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: rgba(79,124,255,0.15);
+    border: 1px solid rgba(79,124,255,0.3);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .rec-flex {
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: rgba(136,144,168,0.15);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  .recs-empty {
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+    padding: 20px 0;
+  }
+
+  /* MY TEAM VIEW */
+  .my-team-wrap {
+    padding: 20px 24px 40px;
+    display: none;
+  }
+
+  .my-team-wrap.visible { display: block; }
+
+  .squad-summary {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 32px;
+  }
+
+  .squad-summary thead th {
+    background: var(--surface);
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--border);
+  }
+
+  .squad-summary tbody tr { border-bottom: 1px solid var(--border); }
+  .squad-summary tbody tr:hover { background: var(--surface2); }
+
+  .squad-summary td {
+    padding: 12px 14px;
+    vertical-align: middle;
+  }
+
+  .pos-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  .need-count { color: var(--muted); font-size: 13px; }
+  .have-count { font-weight: 700; font-size: 16px; }
+  .have-count.full  { color: var(--green); }
+  .have-count.short { color: var(--yellow); }
+  .have-count.empty { color: var(--red); }
+
+  .remaining-count { font-size: 13px; font-weight: 600; color: var(--muted); }
+  .remaining-count.zero { color: var(--green); }
+
+  .targets-cell { display: flex; flex-direction: column; gap: 4px; }
+
+  .target-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+  }
+
+  .target-name { color: var(--text); font-weight: 600; }
+  .target-vorp { color: var(--green); font-size: 11px; font-weight: 700; min-width: 40px; }
+  .target-vorp.neg { color: var(--red); }
+  .target-team { font-size: 10px; }
+
+  .my-picks-list { margin-top: 8px; }
+  .my-picks-list h3 { font-size: 13px; color: var(--muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .pick-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(79, 124, 255, 0.12);
+    border: 1px solid rgba(79, 124, 255, 0.3);
+    border-radius: 20px;
+    padding: 4px 10px;
+    margin: 3px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .pick-chip .pick-pos { font-size: 10px; color: var(--accent); }
+  .pick-chip .pick-vorp { font-size: 10px; color: var(--muted); }
+
+  .empty-team { text-align: center; padding: 60px; color: var(--muted); }
+
+  @media (max-width: 768px) {
+    /* Header */
+    .header-stats { display: none; }
+    header { padding: 12px 16px; }
+    header h1 { font-size: 16px; }
+
+    /* Controls — stack into rows */
+    .controls {
+      padding: 10px 12px;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+    }
+    .pos-filters { gap: 4px; }
+    .pos-btn { padding: 4px 9px; font-size: 11px; }
+    .search-box { width: 100%; }
+    .controls > div:last-child { margin-left: 0; }
+
+    /* Legend — wrap compactly */
+    .legend { padding: 8px 12px; gap: 10px; }
+    .legend-item:last-child { margin-left: 0; display: none; } /* hide cycle hint */
+
+    /* Import section */
+    .import-section { padding: 8px 12px; flex-wrap: wrap; }
+
+    /* Note */
+    .note { margin: 8px 12px; }
+
+    /* Draft board layout — drop sidebar entirely on mobile */
+    .draft-board-layout { flex-direction: column; }
+    .recs-panel { display: none; }
+
+    /* Table wrapper */
+    .table-wrap { padding: 0 0 24px; overflow-x: auto; }
+
+    /* Hide less critical columns: 2024 Avg (7th) and Prior Avg (8th) */
+    #draft-table thead th:nth-child(7),
+    #draft-table thead th:nth-child(8),
+    #draft-table tbody td:nth-child(7),
+    #draft-table tbody td:nth-child(8) { display: none; }
+
+    /* Hide VORP bar — just show the number */
+    .vorp-bar { display: none; }
+
+    /* Tighten cell padding */
+    td, thead th { padding: 8px 8px; }
+
+    /* My Team — compact */
+    .my-team-wrap { padding: 12px 12px 40px; }
+    .squad-summary td, .squad-summary thead th { padding: 8px 8px; }
+
+    /* Hide Top 3 Targets column on very small screens — show from 600px up */
+    .squad-summary thead th:nth-child(5),
+    .squad-summary tbody td:nth-child(5) { display: none; }
+
+    /* Picks chips wrap tighter */
+    .pick-chip { font-size: 11px; padding: 3px 8px; }
+  }
+
+  @media (min-width: 600px) and (max-width: 768px) {
+    /* Tablet-ish: restore Top 3 Targets column */
+    .squad-summary thead th:nth-child(5),
+    .squad-summary tbody td:nth-child(5) { display: table-cell; }
+  }
+
+  .note {
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--surface2);
+    border-left: 3px solid var(--yellow);
+    padding: 8px 12px;
+    margin: 10px 24px;
+    border-radius: 0 6px 6px 0;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🏉 NRL Supercoach Draft Board</h1>
+    <p>Value Over Replacement Player — Weighted: 80% 2025 · 10% 2024 · 10% Prior</p>
+  </div>
+  <div class="header-stats">
+    <div class="stat-chip">
+      <div class="val" id="total-players">—</div>
+      <div class="lbl">Total Players</div>
+    </div>
+    <div class="stat-chip">
+      <div class="val" id="available-count">—</div>
+      <div class="lbl">Available</div>
+    </div>
+    <div class="stat-chip">
+      <div class="val" id="mine-count">0</div>
+      <div class="lbl">My Picks</div>
+    </div>
+    <div class="stat-chip">
+      <div class="val" id="opp-count">0</div>
+      <div class="lbl">Opp Picks</div>
+    </div>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="pos-filters" id="pos-filters">
+    <button class="pos-btn active" data-pos="ALL">All</button>
+    <button class="pos-btn" data-pos="FLB">FLB</button>
+    <button class="pos-btn" data-pos="CTW">CTW</button>
+    <button class="pos-btn" data-pos="HFB">HFB</button>
+    <button class="pos-btn" data-pos="5/8">5/8</button>
+    <button class="pos-btn" data-pos="HOK">HOK</button>
+    <button class="pos-btn" data-pos="FRF">FRF</button>
+    <button class="pos-btn" data-pos="2RF">2RF</button>
+  </div>
+
+  <input type="text" class="search-box" id="search" placeholder="Search player…">
+
+  <label class="toggle-drafted">
+    <input type="checkbox" id="hide-drafted"> Hide drafted
+  </label>
+  <label class="toggle-drafted">
+    <input type="checkbox" id="hide-unavailable"> Hide low availability ⚠
+  </label>
+
+  <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+    <span style="font-size:11px;color:var(--muted);white-space:nowrap">League size:</span>
+    <div class="pos-filters" id="team-size-filters">
+      <button class="pos-btn" data-teams="8">8</button>
+      <button class="pos-btn" data-teams="10">10</button>
+      <button class="pos-btn" data-teams="12">12</button>
+      <button class="pos-btn" data-teams="14">14</button>
+      <button class="pos-btn" data-teams="16">16</button>
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Above replacement level</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> Below replacement level</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--muted)"></div> Near replacement level</div>
+  <div class="legend-item"><div class="avail-warn" style="position:static;display:inline">⚠</div> Limited games in 2025 (≤2 games detected)</div>
+  <div class="legend-item" style="margin-left:auto; font-size:11px">Click Draft button: <strong>ME</strong> = my pick · <strong>OPP</strong> = opponent's pick · click again to clear</div>
+</div>
+
+<div class="import-section">
+  <label>Data:</label>
+  <button class="btn btn-danger" onclick="clearDrafted()">↺ Reset Draft Board</button>
+  <span class="import-hint" id="data-source-hint">To refresh live data: run <strong>update-players.ps1</strong>, then reload this page.</span>
+</div>
+
+<div class="note" id="data-note">
+  ℹ️ Loading data source…
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" data-tab="draft-board">Draft Board</button>
+  <button class="tab-btn" data-tab="my-team">My Team</button>
+</div>
+
+<div id="tab-draft-board" class="draft-board-layout">
+<div class="table-wrap">
+  <table id="draft-table">
+    <thead>
+      <tr>
+        <th style="width:54px">Draft</th>
+        <th data-sort="rank">Rank <span class="sort-icon">↕</span></th>
+        <th data-sort="name">Player <span class="sort-icon">↕</span></th>
+        <th data-sort="team">Team <span class="sort-icon">↕</span></th>
+        <th>Position</th>
+        <th data-sort="avg2025">2025 Avg <span class="sort-icon">↕</span></th>
+        <th data-sort="avg2024">2024 Avg <span class="sort-icon">↕</span></th>
+        <th data-sort="avgPrior">Prior Avg <span class="sort-icon">↕</span></th>
+        <th data-sort="weighted">Weighted Avg <span class="sort-icon">↕</span></th>
+        <th data-sort="vorp">VORP <span class="sort-icon">↕</span></th>
+      </tr>
+    </thead>
+    <tbody id="table-body"></tbody>
+  </table>
+  <div class="empty-state" id="empty-state" style="display:none">
+    <div class="icon">🔍</div>
+    <p>No players match your filter.</p>
+  </div>
+</div>
+<div class="recs-panel" id="recs-panel">
+  <h3>Next Pick Recommendations</h3>
+  <div id="recs-list"><div class="recs-empty">Draft some players to see recommendations.</div></div>
+</div>
+</div>
+
+<div class="my-team-wrap" id="tab-my-team">
+  <div id="my-team-content"><div class="empty-team">Mark players as <strong>ME</strong> on the Draft Board to see your squad summary here.</div></div>
+</div>
+
+<!-- Live player data — generated by update-players.ps1 -->
+<script src="players-data.js"></script>
+
+<!-- CSV Import Modal -->
+<div class="modal-overlay" id="import-modal">
+  <div class="modal">
+    <h2>Import Player CSV</h2>
+    <p>
+      Paste CSV data with headers: <code>Name,Team,Positions,Avg2025,Avg2024,AvgPrior</code><br>
+      Positions can be comma-separated within quotes, e.g. <code>"FLB,WFB"</code><br>
+      Get stats from <strong>nrlsupercoachstats.com</strong> → Stats Table → copy the player averages.
+    </p>
+    <textarea id="csv-input" placeholder="Name,Team,Positions,Avg2025,Avg2024,AvgPrior
+Reece Walsh,BRI,&quot;WFB,FLB&quot;,82,74,62
+Nathan Cleary,PEN,HFB,78,75,72
+..."></textarea>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeImport()">Cancel</button>
+      <button class="btn btn-primary" onclick="importCSV()">Import</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── REPLACEMENT LEVEL THRESHOLDS ───────────────────────────────────────────
+// Minimum positional requirements for your 18-player squad
+const SQUAD_REQUIREMENTS = {
+  FLB:   1,
+  CTW:   4,
+  HFB:   1,
+  '5/8': 1,
+  HOK:   1,
+  FRF:   2,
+  '2RF': 3,
+};
+// Total squad size — the 5 picks above the 13 positional minimums are flex/bench spots
+const SQUAD_TOTAL = 18;
+
+// Starters per position per team — used to compute replacement threshold dynamically
+const STARTERS_PER_TEAM = {
+  FLB:   1,
+  CTW:   3,
+  HFB:   1,
+  '5/8': 1,
+  HOK:   1,
+  FRF:   4,
+  '2RF': 3,
+};
+
+function getReplacementThresholds(numTeams) {
+  const t = {};
+  Object.entries(STARTERS_PER_TEAM).forEach(([pos, n]) => { t[pos] = n * numTeams; });
+  return t;
+}
+
+// ─── PLAYER DATA ─────────────────────────────────────────────────────────────
+// Loaded from players-data.js (run update-players.ps1 to refresh)
+// Falls back to built-in sample data if players-data.js is not present.
+const FALLBACK_PLAYERS = [
+  // FULLBACKS / WING-FULLBACKS
+  { name: "Reece Walsh",          team: "BRI", positions: ["FLB","CTW"], avg2025: 82, avg2024: 74, avgPrior: 62 },
+  { name: "James Tedesco",        team: "SYD", positions: ["FLB"],       avg2025: 72, avg2024: 68, avgPrior: 72 },
+  { name: "Ryan Papenhuyzen",     team: "GSW", positions: ["FLB","WFB"], avg2025: 70, avg2024: 65, avgPrior: 58 },
+  { name: "Tom Trbojevic",        team: "MAN", positions: ["FLB","CTB"], avg2025: 68, avg2024: 58, avgPrior: 70 },
+  { name: "Stephen Crichton",     team: "PEN", positions: ["CTB","FLB"], avg2025: 68, avg2024: 65, avgPrior: 58 },
+  { name: "AJ Brimson",           team: "GSW", positions: ["FLB","5/8"], avg2025: 64, avg2024: 60, avgPrior: 55 },
+  { name: "Hamiso Tabuai-Fidow",  team: "SYD", positions: ["WFB","FLB"], avg2025: 65, avg2024: 60, avgPrior: 50 },
+  { name: "Clint Gutherson",      team: "PAR", positions: ["FLB"],       avg2025: 60, avg2024: 62, avgPrior: 65 },
+  { name: "Selwyn Cobbo",         team: "BRI", positions: ["WFB","CTB"], avg2025: 58, avg2024: 50, avgPrior: 42 },
+  { name: "Zac Lomax",            team: "DLG", positions: ["CTB","WFB"], avg2025: 58, avg2024: 55, avgPrior: 48 },
+  { name: "Brian To'o",           team: "PEN", positions: ["WFB"],       avg2025: 56, avg2024: 53, avgPrior: 51 },
+  { name: "Valentine Holmes",     team: "NQL", positions: ["CTB","WFB"], avg2025: 55, avg2024: 52, avgPrior: 55 },
+  { name: "Tesi Niu",             team: "BRI", positions: ["CTB","WFB"], avg2025: 52, avg2024: 48, avgPrior: 42 },
+  { name: "Josh Addo-Carr",       team: "MEL", positions: ["WFB"],       avg2025: 50, avg2024: 47, avgPrior: 46 },
+  { name: "Reuben Garrick",       team: "MAN", positions: ["WFB","EDG"], avg2025: 52, avg2024: 50, avgPrior: 46 },
+  { name: "Corey Oates",          team: "BRI", positions: ["WFB"],       avg2025: 48, avg2024: 46, avgPrior: 48 },
+  { name: "Daniel Tupou",         team: "SYD", positions: ["WFB"],       avg2025: 48, avg2024: 45, avgPrior: 42 },
+  { name: "Maika Sivo",           team: "PAR", positions: ["WFB"],       avg2025: 44, avg2024: 42, avgPrior: 40 },
+  { name: "Dane Gagai",           team: "SOU", positions: ["WFB","CTB"], avg2025: 44, avg2024: 42, avgPrior: 46 },
+  { name: "Tristan Sailor",       team: "GSW", positions: ["WFB"],       avg2025: 46, avg2024: 42, avgPrior: 36 },
+  { name: "Xavier Coates",        team: "MEL", positions: ["WFB"],       avg2025: 52, avg2024: 48, avgPrior: 44 },
+  { name: "Paul Alamoti",         team: "PAR", positions: ["CTB","WFB"], avg2025: 50, avg2024: 46, avgPrior: 36 },
+
+  // HALFBACKS
+  { name: "Nathan Cleary",        team: "PEN", positions: ["HFB"],       avg2025: 80, avg2024: 76, avgPrior: 73 },
+  { name: "Nicho Hynes",          team: "CRO", positions: ["HFB"],       avg2025: 76, avg2024: 70, avgPrior: 65 },
+  { name: "Jahrome Hughes",       team: "MEL", positions: ["HFB"],       avg2025: 72, avg2024: 68, avgPrior: 62 },
+  { name: "Mitchell Moses",       team: "PAR", positions: ["HFB"],       avg2025: 66, avg2024: 63, avgPrior: 61 },
+  { name: "Adam Reynolds",        team: "BRI", positions: ["HFB"],       avg2025: 63, avg2024: 61, avgPrior: 66 },
+  { name: "Daly Cherry-Evans",    team: "MAN", positions: ["HFB"],       avg2025: 62, avg2024: 65, avgPrior: 68 },
+  { name: "Toby Sexton",          team: "GSW", positions: ["HFB"],       avg2025: 60, avg2024: 54, avgPrior: 44 },
+  { name: "Shaun Johnson",        team: "NQL", positions: ["HFB"],       avg2025: 58, avg2024: 55, avgPrior: 58 },
+  { name: "Luke Brooks",          team: "TIG", positions: ["HFB"],       avg2025: 56, avg2024: 54, avgPrior: 52 },
+  { name: "Kyle Flanagan",        team: "CRO", positions: ["HFB"],       avg2025: 56, avg2024: 54, avgPrior: 50 },
+  { name: "Chad Townsend",        team: "NQL", positions: ["HFB"],       avg2025: 55, avg2024: 58, avgPrior: 55 },
+  { name: "Jaeman Salmon",        team: "PAR", positions: ["HFB"],       avg2025: 52, avg2024: 50, avgPrior: 44 },
+
+  // FIVE-EIGHTHS
+  { name: "Jarome Luai",          team: "TIG", positions: ["5/8"],       avg2025: 68, avg2024: 65, avgPrior: 60 },
+  { name: "Cameron Munster",      team: "MEL", positions: ["5/8"],       avg2025: 66, avg2024: 62, avgPrior: 68 },
+  { name: "Tom Dearden",          team: "NQL", positions: ["5/8","HFB"], avg2025: 66, avg2024: 63, avgPrior: 56 },
+  { name: "Dylan Brown",          team: "PAR", positions: ["5/8"],       avg2025: 63, avg2024: 61, avgPrior: 55 },
+  { name: "Jack Wighton",         team: "CBR", positions: ["5/8"],       avg2025: 60, avg2024: 58, avgPrior: 62 },
+  { name: "Matt Burton",          team: "DLG", positions: ["5/8","CTB"], avg2025: 59, avg2024: 56, avgPrior: 52 },
+  { name: "Cody Walker",          team: "SOU", positions: ["5/8"],       avg2025: 58, avg2024: 56, avgPrior: 60 },
+  { name: "Lachlan Galvin",       team: "TIG", positions: ["5/8","HFB"], avg2025: 58, avg2024: 48, avgPrior: 36 },
+  { name: "Kurt Mann",            team: "NEW", positions: ["5/8","HOK"], avg2025: 54, avg2024: 52, avgPrior: 50 },
+  { name: "Tyrell Sloan",         team: "DLG", positions: ["5/8","FLB"], avg2025: 56, avg2024: 50, avgPrior: 42 },
+
+  // CENTRES
+  { name: "Kotoni Staggs",        team: "BRI", positions: ["CTB"],       avg2025: 62, avg2024: 59, avgPrior: 56 },
+  { name: "Joseph Manu",          team: "SYD", positions: ["CTB","WFB"], avg2025: 60, avg2024: 57, avgPrior: 53 },
+  { name: "Bradman Best",         team: "NEW", positions: ["CTB"],       avg2025: 58, avg2024: 55, avgPrior: 50 },
+  { name: "Jesse Ramien",         team: "NEW", positions: ["CTB"],       avg2025: 52, avg2024: 50, avgPrior: 46 },
+  { name: "Matt Timoko",          team: "CBR", positions: ["CTB"],       avg2025: 54, avg2024: 50, avgPrior: 42 },
+  { name: "Euan Aitken",          team: "DLG", positions: ["CTB","EDG"], avg2025: 50, avg2024: 48, avgPrior: 46 },
+  { name: "Braidon Burns",        team: "MAN", positions: ["CTB","WFB"], avg2025: 48, avg2024: 45, avgPrior: 42 },
+  { name: "Jack Bostock",         team: "NQL", positions: ["CTB","WFB"], avg2025: 48, avg2024: 44, avgPrior: 38 },
+  { name: "Moses Suli",           team: "TIG", positions: ["CTB"],       avg2025: 46, avg2024: 44, avgPrior: 46 },
+  { name: "Bay Poma",             team: "CRO", positions: ["CTB","WFB"], avg2025: 46, avg2024: 42, avgPrior: 36 },
+
+  // HOOKERS
+  { name: "Harry Grant",          team: "MEL", positions: ["HOK"],       avg2025: 70, avg2024: 74, avgPrior: 71 },
+  { name: "Ben Hunt",             team: "STI", positions: ["HOK","HFB"], avg2025: 66, avg2024: 69, avgPrior: 66 },
+  { name: "Reed Mahoney",         team: "PAR", positions: ["HOK"],       avg2025: 62, avg2024: 60, avgPrior: 56 },
+  { name: "Damien Cook",          team: "SOU", positions: ["HOK"],       avg2025: 60, avg2024: 62, avgPrior: 66 },
+  { name: "Api Koroisau",         team: "TIG", positions: ["HOK"],       avg2025: 60, avg2024: 57, avgPrior: 60 },
+  { name: "Jayden Brailey",       team: "NEW", positions: ["HOK"],       avg2025: 56, avg2024: 54, avgPrior: 51 },
+  { name: "Blayke Brailey",       team: "STI", positions: ["HOK"],       avg2025: 52, avg2024: 50, avgPrior: 46 },
+  { name: "Lachlan Croker",       team: "MAN", positions: ["HOK"],       avg2025: 50, avg2024: 48, avgPrior: 44 },
+  { name: "Cody Horsburgh",       team: "GSW", positions: ["HOK"],       avg2025: 50, avg2024: 46, avgPrior: 40 },
+  { name: "Jeremy Marshall-King", team: "CRO", positions: ["HOK"],       avg2025: 48, avg2024: 46, avgPrior: 42 },
+
+  // MIDDLES (PROPS)
+  { name: "Payne Haas",           team: "BRI", positions: ["MID"],       avg2025: 64, avg2024: 62, avgPrior: 57 },
+  { name: "Jason Taumalolo",      team: "NQL", positions: ["MID"],       avg2025: 60, avg2024: 57, avgPrior: 60 },
+  { name: "Nelson Asofa-Solomona",team: "MEL", positions: ["MID"],       avg2025: 57, avg2024: 54, avgPrior: 52 },
+  { name: "James Fisher-Harris",  team: "PAR", positions: ["MID"],       avg2025: 56, avg2024: 54, avgPrior: 57 },
+  { name: "Stefano Utoikamanu",   team: "TIG", positions: ["MID"],       avg2025: 55, avg2024: 52, avgPrior: 44 },
+  { name: "Tino Fa'asuamaleaui",  team: "GSW", positions: ["MID","LKR"], avg2025: 60, avg2024: 57, avgPrior: 52 },
+  { name: "Christian Welch",      team: "MEL", positions: ["MID"],       avg2025: 54, avg2024: 52, avgPrior: 50 },
+  { name: "Tom Flegler",          team: "BRI", positions: ["MID"],       avg2025: 52, avg2024: 50, avgPrior: 46 },
+  { name: "Junior Paulo",         team: "PAR", positions: ["MID"],       avg2025: 54, avg2024: 52, avgPrior: 50 },
+  { name: "Mitch Barnett",        team: "NEW", positions: ["MID"],       avg2025: 54, avg2024: 52, avgPrior: 50 },
+  { name: "Reagan Campbell-Gillard",team:"SYD",positions: ["MID"],       avg2025: 54, avg2024: 52, avgPrior: 50 },
+  { name: "Daniel Saifiti",       team: "NEW", positions: ["MID"],       avg2025: 52, avg2024: 50, avgPrior: 48 },
+  { name: "Josh Papali'i",        team: "PAR", positions: ["MID"],       avg2025: 52, avg2024: 50, avgPrior: 48 },
+  { name: "Moses Leota",          team: "PEN", positions: ["MID"],       avg2025: 52, avg2024: 50, avgPrior: 47 },
+  { name: "Addin Fonoti",         team: "MAN", positions: ["MID"],       avg2025: 50, avg2024: 48, avgPrior: 42 },
+  { name: "Royce Hunt",           team: "CRO", positions: ["MID"],       avg2025: 50, avg2024: 48, avgPrior: 44 },
+  { name: "Max King",             team: "GSW", positions: ["MID"],       avg2025: 50, avg2024: 48, avgPrior: 42 },
+  { name: "Matt Lodge",           team: "SOU", positions: ["MID"],       avg2025: 50, avg2024: 48, avgPrior: 46 },
+  { name: "Joe Ofahengaue",       team: "BRI", positions: ["MID"],       avg2025: 50, avg2024: 48, avgPrior: 46 },
+  { name: "Tevita Pangai Jr",     team: "CBR", positions: ["MID"],       avg2025: 50, avg2024: 48, avgPrior: 50 },
+  { name: "Korbin Sims",          team: "STI", positions: ["MID"],       avg2025: 48, avg2024: 46, avgPrior: 46 },
+  { name: "Jared Waerea-Hargreaves",team:"SYD",positions: ["MID"],       avg2025: 48, avg2024: 46, avgPrior: 50 },
+  { name: "Klese Haas",           team: "BRI", positions: ["MID","EDG"], avg2025: 52, avg2024: 48, avgPrior: 40 },
+  { name: "Siosaia Vave",         team: "CRO", positions: ["MID"],       avg2025: 48, avg2024: 44, avgPrior: 38 },
+  { name: "Jack Williams",        team: "CRO", positions: ["MID"],       avg2025: 48, avg2024: 46, avgPrior: 44 },
+  { name: "Liam Knight",          team: "CBR", positions: ["MID"],       avg2025: 48, avg2024: 46, avgPrior: 44 },
+  { name: "Thomas Hazelton",      team: "STI", positions: ["MID"],       avg2025: 46, avg2024: 44, avgPrior: 40 },
+  { name: "Shawn Blore",          team: "MEL", positions: ["MID"],       avg2025: 46, avg2024: 44, avgPrior: 40 },
+  { name: "Ryan Sutton",          team: "CBR", positions: ["MID"],       avg2025: 46, avg2024: 44, avgPrior: 46 },
+  { name: "Lindsay Collins",      team: "SYD", positions: ["MID"],       avg2025: 46, avg2024: 44, avgPrior: 44 },
+  { name: "David Klemmer",        team: "NEW", positions: ["MID"],       avg2025: 46, avg2024: 44, avgPrior: 50 },
+  { name: "Sitili Tupouniua",     team: "SYD", positions: ["MID","EDG"], avg2025: 48, avg2024: 46, avgPrior: 42 },
+  { name: "Fonua Pole",           team: "MAN", positions: ["MID"],       avg2025: 44, avg2024: 42, avgPrior: 38 },
+  { name: "Ben Trbojevic",        team: "MAN", positions: ["MID"],       avg2025: 44, avg2024: 42, avgPrior: 40 },
+  { name: "Jacob Saifiti",        team: "NEW", positions: ["MID"],       avg2025: 44, avg2024: 42, avgPrior: 44 },
+  { name: "Emre Guler",           team: "CBR", positions: ["MID"],       avg2025: 44, avg2024: 42, avgPrior: 40 },
+  { name: "Jarrod Wallace",       team: "GSW", positions: ["MID"],       avg2025: 44, avg2024: 42, avgPrior: 44 },
+  { name: "Thomas Flegler",       team: "BRI", positions: ["MID"],       avg2025: 42, avg2024: 40, avgPrior: 38 },
+  { name: "Poasa Faamausili",     team: "MEL", positions: ["MID"],       avg2025: 42, avg2024: 40, avgPrior: 36 },
+  { name: "Nathan Brown",         team: "SEA", positions: ["MID"],       avg2025: 42, avg2024: 40, avgPrior: 40 },
+  { name: "Bryce Cartwright",     team: "GSW", positions: ["MID"],       avg2025: 42, avg2024: 40, avgPrior: 42 },
+
+  // EDGE FORWARDS
+  { name: "Cameron Murray",       team: "SOU", positions: ["EDG","LKR"], avg2025: 66, avg2024: 63, avgPrior: 61 },
+  { name: "Isaah Yeo",            team: "PEN", positions: ["EDG","LKR"], avg2025: 64, avg2024: 62, avgPrior: 60 },
+  { name: "Angus Crichton",       team: "SYD", positions: ["EDG"],       avg2025: 64, avg2024: 62, avgPrior: 60 },
+  { name: "Liam Martin",          team: "PEN", positions: ["EDG"],       avg2025: 62, avg2024: 60, avgPrior: 57 },
+  { name: "Hudson Young",         team: "CBR", positions: ["EDG"],       avg2025: 62, avg2024: 60, avgPrior: 54 },
+  { name: "Haumole Olakau'atu",   team: "MAN", positions: ["EDG"],       avg2025: 60, avg2024: 57, avgPrior: 50 },
+  { name: "Ryan Matterson",       team: "PAR", positions: ["EDG"],       avg2025: 60, avg2024: 57, avgPrior: 54 },
+  { name: "Jaydn Su'A",           team: "SOU", positions: ["EDG"],       avg2025: 60, avg2024: 57, avgPrior: 54 },
+  { name: "Tyson Frizell",        team: "NEW", positions: ["EDG","LKR"], avg2025: 57, avg2024: 54, avgPrior: 57 },
+  { name: "Keaon Koloamatangi",   team: "SOU", positions: ["EDG"],       avg2025: 56, avg2024: 53, avgPrior: 46 },
+  { name: "Briton Nikora",        team: "CRO", positions: ["EDG"],       avg2025: 56, avg2024: 53, avgPrior: 50 },
+  { name: "Felise Kaufusi",       team: "MEL", positions: ["EDG"],       avg2025: 54, avg2024: 52, avgPrior: 54 },
+  { name: "Dale Finucane",        team: "MEL", positions: ["EDG","MID"], avg2025: 54, avg2024: 52, avgPrior: 54 },
+  { name: "Jai Arrow",            team: "SOU", positions: ["EDG","LKR"], avg2025: 56, avg2024: 54, avgPrior: 52 },
+  { name: "Kurt Capewell",        team: "PEN", positions: ["EDG"],       avg2025: 54, avg2024: 52, avgPrior: 50 },
+  { name: "Ethan Bullemor",       team: "MAN", positions: ["EDG"],       avg2025: 52, avg2024: 48, avgPrior: 42 },
+  { name: "Jack Hetherington",    team: "CBR", positions: ["EDG"],       avg2025: 52, avg2024: 50, avgPrior: 46 },
+  { name: "Kaide Ellis",          team: "STI", positions: ["EDG"],       avg2025: 52, avg2024: 50, avgPrior: 46 },
+  { name: "Jackson Hastings",     team: "CRO", positions: ["EDG"],       avg2025: 50, avg2024: 48, avgPrior: 46 },
+  { name: "Tariq Sims",           team: "STI", positions: ["EDG"],       avg2025: 50, avg2024: 48, avgPrior: 52 },
+  { name: "Jack Gosiewski",       team: "CBR", positions: ["EDG"],       avg2025: 50, avg2024: 48, avgPrior: 44 },
+  { name: "Braden Hamlin-Uele",   team: "NQL", positions: ["EDG","MID"], avg2025: 48, avg2024: 46, avgPrior: 42 },
+  { name: "Luciano Leilua",       team: "NQL", positions: ["EDG"],       avg2025: 48, avg2024: 46, avgPrior: 50 },
+  { name: "Zane Tetevano",        team: "PEN", positions: ["EDG","MID"], avg2025: 48, avg2024: 46, avgPrior: 48 },
+
+  // LOCKS
+  { name: "Patrick Carrigan",     team: "BRI", positions: ["LKR"],       avg2025: 64, avg2024: 60, avgPrior: 54 },
+  { name: "Jake Trbojevic",       team: "MAN", positions: ["LKR"],       avg2025: 62, avg2024: 60, avgPrior: 60 },
+  { name: "Josh McGuire",         team: "STI", positions: ["2RF"],       avg2025: 54, avg2024: 52, avgPrior: 52 },
+];
+
+// Use live data from players-data.js if available, otherwise use built-in fallback
+// Remove players with no 2025 data — they likely retired or did not play at all in 2025
+const RAW_PLAYERS = (window.PLAYER_DATA && window.PLAYER_DATA.players) ? window.PLAYER_DATA.players : FALLBACK_PLAYERS;
+let PLAYERS = RAW_PLAYERS.filter(p => p.avg2025 != null);
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+// draftPicks: { [id]: 'mine' | 'opp' }
+let draftPicks = JSON.parse(localStorage.getItem('sc-draft-picks') || '{}');
+let activePos = 'ALL';
+let searchQuery = '';
+let hideDrafted = false;
+let hideUnavailable = false;
+let sortKey = 'vorp';
+let sortDir = -1; // -1 = descending
+let numTeams = parseInt(localStorage.getItem('sc-num-teams') || '12');
+
+function getDraftState(id) { return draftPicks[id] || null; }
+function cycleDraft(id) {
+  const cur = getDraftState(id);
+  if (cur === null)   draftPicks[id] = 'opp';
+  else if (cur === 'opp') draftPicks[id] = 'mine';
+  else                delete draftPicks[id];
+  localStorage.setItem('sc-draft-picks', JSON.stringify(draftPicks));
+}
+
+// ─── CORE CALCULATIONS ────────────────────────────────────────────────────────
+
+function weightedAvg(p) {
+  // Only include years with real data; re-normalise weights so missing years don't drag the average down
+  let total = 0, weight = 0;
+  if (p.avg2025 != null) { total += 0.8 * p.avg2025; weight += 0.8; }
+  if (p.avg2024 != null) { total += 0.1 * p.avg2024; weight += 0.1; }
+  if (p.avgPrior != null) { total += 0.1 * p.avgPrior; weight += 0.1; }
+  return weight > 0 ? total / weight : 0;
+}
+
+function computeVORP(players) {
+  const REPLACEMENT_THRESHOLDS = getReplacementThresholds(numTeams);
+
+  // Group players by primary position and calculate replacement levels
+  const byPos = {};
+  players.forEach(p => {
+    const pos = p.positions[0];
+    if (!byPos[pos]) byPos[pos] = [];
+    byPos[pos].push(p.weighted);
+  });
+
+  const replacementLevels = {};
+  Object.entries(byPos).forEach(([pos, scores]) => {
+    scores.sort((a, b) => b - a);
+    const threshold = REPLACEMENT_THRESHOLDS[pos] || 10;
+    replacementLevels[pos] = scores[threshold] ?? scores[scores.length - 1] ?? 0;
+  });
+
+  return players.map(p => ({
+    ...p,
+    vorp: p.weighted - (replacementLevels[p.positions[0]] ?? 0),
+    replacementLevel: replacementLevels[p.positions[0]] ?? 0
+  }));
+}
+
+function processPlayers(rawPlayers) {
+  return rawPlayers.map((p, i) => ({
+    ...p,
+    id: i,
+    weighted: parseFloat(weightedAvg(p).toFixed(1)),
+  }));
+}
+
+// ─── RENDERING ────────────────────────────────────────────────────────────────
+
+function getTeamClass(team) { return /^[A-Z0-9]+$/.test(team) ? 'team-' + team : 'team-unknown'; }
+function getPosClass(pos) {
+  const map = { 'FLB':'FLB','CTW':'CTW','HFB':'HFB','5/8':'518','HOK':'HOK','FRF':'FRF','2RF':'2RF' };
+  return 'pos-' + (map[pos] || 'FRF');
+}
+
+function renderTable() {
+  const processed = processPlayers(PLAYERS);
+  const withVORP = computeVORP(processed);
+
+  // Flag low availability: avg2025/avg2024 < 0.80 means the draftgrid game-multiplier
+  // was applied (×0.66 for 1 game, ×0.75 for 2 games) — strong signal of ≤2 games played.
+  // Note: 3–4 game players are indistinguishable from full-season players in this data.
+  withVORP.forEach(p => {
+    p.unavailable = p.avg2024 != null && p.avg2025 != null && (p.avg2025 / p.avg2024) < 0.80;
+  });
+
+  // Filter
+  let filtered = withVORP.filter(p => {
+    const matchPos = activePos === 'ALL' || p.positions.includes(activePos);
+    const matchSearch = !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.team.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchDrafted = !hideDrafted || getDraftState(p.id) === null;
+    const matchAvail = !hideUnavailable || !p.unavailable;
+    return matchPos && matchSearch && matchDrafted && matchAvail;
+  });
+
+  // Sort
+  filtered.sort((a, b) => {
+    let av = a[sortKey], bv = b[sortKey];
+    if (typeof av === 'string') return sortDir * av.localeCompare(bv);
+    return sortDir * (av - bv);
+  });
+
+  // Assign display rank among available (undrafted) players only
+  let rank = 1;
+  const ranked = filtered.map(p => ({ ...p, displayRank: getDraftState(p.id) ? null : rank++ }));
+
+  // Update headers
+  document.querySelectorAll('thead th').forEach(th => {
+    th.classList.toggle('sorted', th.dataset.sort === sortKey);
+    const icon = th.querySelector('.sort-icon');
+    if (icon && th.dataset.sort === sortKey) icon.textContent = sortDir === -1 ? '↓' : '↑';
+    else if (icon) icon.textContent = '↕';
+  });
+
+  // Update stats
+  const mineCount = Object.values(draftPicks).filter(v => v === 'mine').length;
+  const oppCount  = Object.values(draftPicks).filter(v => v === 'opp').length;
+  const availableCount = withVORP.filter(p => getDraftState(p.id) === null).length;
+  document.getElementById('total-players').textContent = PLAYERS.length;
+  document.getElementById('available-count').textContent = availableCount;
+  document.getElementById('mine-count').textContent = mineCount;
+  document.getElementById('opp-count').textContent = oppCount;
+
+  // Render rows
+  const maxVORP = Math.max(...withVORP.map(p => Math.abs(p.vorp)), 1);
+  const tbody = document.getElementById('table-body');
+
+  if (ranked.length === 0) {
+    tbody.innerHTML = '';
+    document.getElementById('empty-state').style.display = 'block';
+    return;
+  }
+  document.getElementById('empty-state').style.display = 'none';
+
+  tbody.innerHTML = ranked.map(p => {
+    const draftState = getDraftState(p.id);
+    const rowClass = draftState === 'mine' ? 'drafted-mine' : draftState === 'opp' ? 'drafted-opp' : '';
+    const vorp = p.vorp.toFixed(1);
+    const vorpClass = p.vorp > 2 ? 'vorp-pos' : p.vorp < -2 ? 'vorp-neg' : '';
+    const barWidth = Math.min(120, Math.round((Math.abs(p.vorp) / maxVORP) * 120));
+    const barColor = p.vorp >= 0 ? 'var(--green)' : 'var(--red)';
+    const rankDisplay = draftState ? '—' : p.displayRank;
+    const rankClass = p.displayRank === 1 ? 'rank-1' : p.displayRank === 2 ? 'rank-2' : p.displayRank === 3 ? 'rank-3' : '';
+    const btnLabel = draftState === 'mine' ? 'ME' : draftState === 'opp' ? 'OPP' : '·';
+    const ratio = p.avg2024 ? (p.avg2025 / p.avg2024).toFixed(2) : '?';
+    const warnBadge = p.unavailable ? `<span class="avail-warn" title="2025 rating dropped to ${ratio}× of 2024 — likely played ≤2 games in 2025">⚠</span>` : '';
+
+    return `<tr class="${rowClass}">
+      <td><button class="draft-btn ${draftState || ''}" data-id="${p.id}">${btnLabel}</button></td>
+      <td class="rank-cell ${rankClass}">${rankDisplay}</td>
+      <td class="player-name">${p.name}${warnBadge}</td>
+      <td><span class="team-badge ${getTeamClass(p.team)}">${p.team}</span></td>
+      <td>${p.positions.map(pos => `<span class="pos-tag ${getPosClass(pos)}">${pos}</span>`).join('')}</td>
+      <td class="score-cell">${p.avg2025 != null ? p.avg2025 : '—'}</td>
+      <td class="score-cell">${p.avg2024 != null ? p.avg2024 : '—'}</td>
+      <td class="score-cell">${p.avgPrior != null ? p.avgPrior : '—'}</td>
+      <td class="weighted-cell">${p.weighted}</td>
+      <td>
+        <div class="vorp-bar-wrap">
+          <span class="vorp-cell ${vorpClass}">${p.vorp >= 0 ? '+' : ''}${vorp}</span>
+          <div class="vorp-bar" style="width:${barWidth}px;background:${barColor}"></div>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // Update recommendations sidebar
+  renderRecommendations(withVORP);
+
+  // Draft button click — cycles: undrafted → opp → mine → undrafted
+  tbody.querySelectorAll('.draft-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      cycleDraft(parseInt(e.currentTarget.dataset.id));
+      renderTable();
+      if (activeTab === 'my-team') renderMyTeam();
+    });
+  });
+}
+
+// ─── RECOMMENDATIONS ─────────────────────────────────────────────────────────
+
+function renderRecommendations(withVORP) {
+  const positions = ['FLB', 'CTW', 'HFB', '5/8', 'HOK', 'FRF', '2RF'];
+
+  // How many of each position have I already drafted (by primary position)?
+  const draftedByPos = {};
+  positions.forEach(pos => { draftedByPos[pos] = 0; });
+  withVORP.forEach(p => {
+    if (getDraftState(p.id) === 'mine') {
+      const pos = p.positions[0];
+      if (draftedByPos[pos] != null) draftedByPos[pos]++;
+    }
+  });
+
+  // Positions still needed (remaining slots > 0)
+  const neededPositions = new Set();
+  positions.forEach(pos => {
+    const req = SQUAD_REQUIREMENTS[pos] || 0;
+    if (draftedByPos[pos] < req) neededPositions.add(pos);
+  });
+
+  // All available (undrafted) players
+  const available = withVORP.filter(p => getDraftState(p.id) === null);
+
+  // Tag each available player: do they fill a needed position?
+  const myPickCount = withVORP.filter(p => getDraftState(p.id) === 'mine').length;
+  const allPosFilled = neededPositions.size === 0;
+
+  let candidates;
+  if (allPosFilled || myPickCount === 0) {
+    // No picks yet, or all slots filled → recommend top VORP overall
+    candidates = available.map(p => ({ ...p, fillsNeed: false, needPos: null }));
+  } else {
+    // Prioritise players who fill a needed position; label others as flex
+    candidates = available.map(p => {
+      const needPos = p.positions.find(pos => neededPositions.has(pos)) || null;
+      return { ...p, fillsNeed: !!needPos, needPos };
+    });
+    // Sort: needed positions first (by VORP desc), then flex picks
+    candidates.sort((a, b) => {
+      if (a.fillsNeed !== b.fillsNeed) return a.fillsNeed ? -1 : 1;
+      return b.vorp - a.vorp;
+    });
+  }
+
+  // Within each group, sort by VORP desc, then take top 10
+  const needed = candidates.filter(p => p.fillsNeed).sort((a, b) => b.vorp - a.vorp);
+  const flex   = candidates.filter(p => !p.fillsNeed).sort((a, b) => b.vorp - a.vorp);
+  const top10  = [...needed, ...flex].slice(0, 10);
+
+  if (top10.length === 0) {
+    document.getElementById('recs-list').innerHTML = '<div class="recs-empty">No available players.</div>';
+    return;
+  }
+
+  document.getElementById('recs-list').innerHTML = top10.map((p, i) => {
+    const v = p.vorp.toFixed(1);
+    const label = p.fillsNeed
+      ? `<span class="rec-need">fills ${p.needPos}</span>`
+      : (myPickCount > 0 ? `<span class="rec-flex">flex</span>` : '');
+    const warn = p.unavailable ? ' ⚠' : '';
+    return `<div class="rec-item" data-id="${p.id}" title="Click to draft ${p.name}">
+      <div class="rec-rank">${i + 1}</div>
+      <div class="rec-body">
+        <div class="rec-name">${p.name}${warn}</div>
+        <div class="rec-meta">
+          <span class="rec-vorp">+${v} VORP</span>
+          <span class="team-badge ${getTeamClass(p.team)}" style="font-size:10px;padding:1px 5px">${p.team}</span>
+          ${p.positions.map(pos => `<span class="pos-tag ${getPosClass(pos)}" style="font-size:10px;padding:1px 5px">${pos}</span>`).join('')}
+          ${label}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Clicking a rec item cycles its draft state
+  document.getElementById('recs-list').querySelectorAll('.rec-item').forEach(el => {
+    el.addEventListener('click', () => {
+      cycleDraft(parseInt(el.dataset.id));
+      renderTable();
+      if (activeTab === 'my-team') renderMyTeam();
+    });
+  });
+}
+
+// ─── MY TEAM VIEW ────────────────────────────────────────────────────────────
+
+let activeTab = 'draft-board';
+
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.getElementById('tab-draft-board').style.display = tab === 'draft-board' ? '' : 'none';
+  document.getElementById('tab-my-team').classList.toggle('visible', tab === 'my-team');
+  if (tab === 'my-team') renderMyTeam();
+}
+
+function renderMyTeam() {
+  const processed = processPlayers(PLAYERS);
+  const withVORP  = computeVORP(processed);
+
+  const myPicks = withVORP.filter(p => getDraftState(p.id) === 'mine');
+  const available = withVORP.filter(p => getDraftState(p.id) === null);
+
+  // Group my picks by all eligible positions (player appears in every row they can fill)
+  const pickedByPos = {};
+  myPicks.forEach(p => {
+    p.positions.forEach(pos => {
+      if (!pickedByPos[pos]) pickedByPos[pos] = [];
+      pickedByPos[pos].push(p);
+    });
+  });
+
+  // Top 3 targets at each position (available, sorted by VORP desc)
+  function topTargets(pos) {
+    return available
+      .filter(p => p.positions.includes(pos))
+      .sort((a, b) => b.vorp - a.vorp)
+      .slice(0, 3);
+  }
+
+  const positions = ['FLB', 'CTW', 'HFB', '5/8', 'HOK', 'FRF', '2RF'];
+
+  const summaryRows = positions.map(pos => {
+    const required  = SQUAD_REQUIREMENTS[pos] || 0;
+    const drafted   = (pickedByPos[pos] || []).length;
+    const remaining = Math.max(0, required - drafted);
+    const haveClass = drafted >= required ? 'full' : drafted > 0 ? 'short' : 'empty';
+    const remClass  = remaining === 0 ? 'zero' : '';
+    const targets   = topTargets(pos);
+
+    const targetsHtml = targets.length
+      ? targets.map(t => {
+          const v = t.vorp.toFixed(1);
+          const vc = t.vorp >= 0 ? '' : ' neg';
+          return `<div class="target-row">
+            <span class="target-vorp${vc}">${t.vorp >= 0 ? '+' : ''}${v}</span>
+            <span class="target-name">${t.name}</span>
+            <span class="team-badge ${getTeamClass(t.team)} target-team">${t.team}</span>
+          </div>`;
+        }).join('')
+      : '<span style="color:var(--muted);font-size:12px">None available</span>';
+
+    const picks = pickedByPos[pos] || [];
+    const pickedNamesHtml = picks.length
+      ? '<div style="font-size:12px;margin-top:4px;line-height:1.7">' +
+          picks.map(p => `<span style="color:var(--text);font-weight:600;display:block">${p.name}</span>`).join('') +
+        '</div>'
+      : '';
+
+    return `<tr>
+      <td><span class="pos-label"><span class="pos-tag ${getPosClass(pos)}">${pos}</span></span></td>
+      <td class="need-count">${required}</td>
+      <td><span class="have-count ${haveClass}">${drafted}</span>${pickedNamesHtml}</td>
+      <td><span class="remaining-count ${remClass}">${remaining === 0 ? '✓ Done' : remaining}</span></td>
+      <td><div class="targets-cell">${targetsHtml}</div></td>
+    </tr>`;
+  }).join('');
+
+  // My picks chips grouped by position
+  const picksHtml = myPicks.length
+    ? positions.map(pos => {
+        const picks = (pickedByPos[pos] || []);
+        if (!picks.length) return '';
+        return picks.map(p => {
+          const v = p.vorp.toFixed(1);
+          return `<span class="pick-chip">
+            <span class="pick-pos">${pos}</span>
+            ${p.name}
+            <span class="pick-vorp">${p.vorp >= 0 ? '+' : ''}${v}</span>
+          </span>`;
+        }).join('');
+      }).join('')
+    : '';
+
+  const totalRequired = SQUAD_TOTAL;
+  const totalDrafted  = myPicks.length;
+
+  document.getElementById('my-team-content').innerHTML = `
+    <table class="squad-summary">
+      <thead>
+        <tr>
+          <th>Position</th>
+          <th>Required</th>
+          <th>Drafted</th>
+          <th>Remaining</th>
+          <th>Top 3 Targets (by VORP)</th>
+        </tr>
+      </thead>
+      <tbody>${summaryRows}</tbody>
+      <tfoot>
+        <tr style="border-top:2px solid var(--border)">
+          <td style="font-weight:700;padding:10px 14px">Total</td>
+          <td style="padding:10px 14px;font-weight:700">${totalRequired}</td>
+          <td style="padding:10px 14px;font-weight:700;color:var(--accent)">${totalDrafted}</td>
+          <td style="padding:10px 14px;font-weight:700">${Math.max(0, totalRequired - totalDrafted)}</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+    ${myPicks.length ? `<div class="my-picks-list"><h3>My ${totalDrafted} picks</h3>${picksHtml}</div>` : ''}
+  `;
+}
+
+// ─── EVENT HANDLERS ──────────────────────────────────────────────────────────
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+});
+
+document.getElementById('pos-filters').addEventListener('click', e => {
+  if (!e.target.matches('.pos-btn')) return;
+  document.querySelectorAll('.pos-btn').forEach(b => b.classList.remove('active'));
+  e.target.classList.add('active');
+  activePos = e.target.dataset.pos;
+  renderTable();
+});
+
+document.getElementById('search').addEventListener('input', e => {
+  searchQuery = e.target.value;
+  renderTable();
+});
+
+document.getElementById('hide-drafted').addEventListener('change', e => {
+  hideDrafted = e.target.checked;
+  renderTable();
+});
+
+document.getElementById('hide-unavailable').addEventListener('change', e => {
+  hideUnavailable = e.target.checked;
+  renderTable();
+});
+
+document.getElementById('team-size-filters').addEventListener('click', e => {
+  if (!e.target.matches('.pos-btn')) return;
+  numTeams = parseInt(e.target.dataset.teams);
+  localStorage.setItem('sc-num-teams', numTeams);
+  document.querySelectorAll('#team-size-filters .pos-btn').forEach(b => b.classList.toggle('active', b.dataset.teams === String(numTeams)));
+  renderTable();
+});
+
+document.querySelectorAll('thead th[data-sort]').forEach(th => {
+  th.addEventListener('click', () => {
+    if (sortKey === th.dataset.sort) sortDir *= -1;
+    else { sortKey = th.dataset.sort; sortDir = -1; }
+    renderTable();
+  });
+});
+
+// ─── IMPORT / EXPORT ─────────────────────────────────────────────────────────
+
+function openImport() { document.getElementById('import-modal').classList.add('open'); }
+function closeImport() { document.getElementById('import-modal').classList.remove('open'); }
+
+function importCSV() {
+  const raw = document.getElementById('csv-input').value.trim();
+  if (!raw) return;
+
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+  const header = lines[0].toLowerCase();
+  const startIdx = header.includes('name') ? 1 : 0;
+
+  const newPlayers = [];
+  for (let i = startIdx; i < lines.length; i++) {
+    // Handle quoted fields (for positions with commas)
+    const cols = [];
+    let inQ = false, cur = '';
+    for (const ch of lines[i]) {
+      if (ch === '"') { inQ = !inQ; continue; }
+      if (ch === ',' && !inQ) { cols.push(cur.trim()); cur = ''; continue; }
+      cur += ch;
+    }
+    cols.push(cur.trim());
+
+    if (cols.length < 4) continue;
+    newPlayers.push({
+      name: cols[0],
+      team: cols[1].toUpperCase(),
+      positions: cols[2].split(',').map(s => s.trim()),
+      avg2025: parseFloat(cols[3]) || 0,
+      avg2024: parseFloat(cols[4]) || 0,
+      avgPrior: parseFloat(cols[5]) || 0,
+    });
+  }
+
+  if (newPlayers.length > 0) {
+    PLAYERS = newPlayers;
+    draftPicks = {};
+    localStorage.setItem('sc-draft-picks', '{}');
+    document.getElementById('data-note').textContent = `✅ Imported ${newPlayers.length} players successfully.`;
+    closeImport();
+    renderTable();
+  } else {
+    alert('No valid rows found. Check the CSV format.');
+  }
+}
+
+function clearDrafted() {
+  if (!confirm('Reset draft board? This will clear all My Picks and Opponent Picks.')) return;
+  draftPicks = {};
+  localStorage.setItem('sc-draft-picks', '{}');
+  renderTable();
+}
+
+// Close modal on overlay click
+document.getElementById('import-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeImport();
+});
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+// Set active team size button on load
+document.querySelectorAll('#team-size-filters .pos-btn').forEach(b => {
+  b.classList.toggle('active', b.dataset.teams === String(numTeams));
+});
+
+const note = document.getElementById('data-note');
+if (window.PLAYER_DATA) {
+  note.innerHTML = `✅ Live data from nrlsupercoachstats.com &mdash; last updated <strong>${window.PLAYER_DATA.generated}</strong>`;
+  note.style.borderLeftColor = 'var(--green)';
+} else {
+  note.innerHTML = '⚠️ Using built-in sample data. Run <strong>update-players.ps1</strong> then reload for real stats.';
+}
+renderTable();
+</script>
+</body>
+</html>
