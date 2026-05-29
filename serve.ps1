@@ -10,7 +10,14 @@ while ($listener.IsListening) {
     $resp = $ctx.Response
     $path = $req.Url.LocalPath.TrimStart('/')
     if ($path -eq '') { $path = 'supercoach-draft.html' }
-    $file = Join-Path $root $path
+    $file = [System.IO.Path]::GetFullPath((Join-Path $root $path))
+    # Block path traversal — resolved path must stay inside $root
+    if (-not $file.StartsWith([System.IO.Path]::GetFullPath($root) + [System.IO.Path]::DirectorySeparatorChar) -and
+        $file -ne [System.IO.Path]::GetFullPath($root)) {
+        $resp.StatusCode = 403
+        $resp.OutputStream.Close()
+        continue
+    }
     if (Test-Path $file -PathType Leaf) {
         $ext = [System.IO.Path]::GetExtension($file).ToLower()
         $mime = switch ($ext) {

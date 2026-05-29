@@ -915,6 +915,16 @@ Nathan Cleary,PEN,HFB,78,75,72
 </div>
 
 <script>
+// ─── UTILITIES ───────────────────────────────────────────────────────────────
+function esc(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // ─── REPLACEMENT LEVEL THRESHOLDS ───────────────────────────────────────────
 // Minimum positional requirements for your 18-player squad
 const SQUAD_REQUIREMENTS = {
@@ -1251,7 +1261,7 @@ function renderTable() {
     return `<tr class="${rowClass}">
       <td><button class="draft-btn ${draftState || ''}" data-id="${p.id}">${btnLabel}</button></td>
       <td class="rank-cell ${rankClass}">${rankDisplay}</td>
-      <td class="player-name">${p.name}${warnBadge}</td>
+      <td class="player-name">${esc(p.name)}${warnBadge}</td>
       <td><span class="team-badge ${getTeamClass(p.team)}">${p.team}</span></td>
       <td>${p.positions.map(pos => `<span class="pos-tag ${getPosClass(pos)}">${pos}</span>`).join('')}</td>
       <td class="score-cell">${p.avg2025 != null ? p.avg2025 : '—'}</td>
@@ -1345,7 +1355,7 @@ function renderRecommendations(withVORP) {
     return `<div class="rec-item" data-id="${p.id}" title="Click to draft ${p.name}">
       <div class="rec-rank">${i + 1}</div>
       <div class="rec-body">
-        <div class="rec-name">${p.name}${warn}</div>
+        <div class="rec-name">${esc(p.name)}${warn}</div>
         <div class="rec-meta">
           <span class="rec-vorp">+${v} VORP</span>
           <span class="team-badge ${getTeamClass(p.team)}" style="font-size:10px;padding:1px 5px">${p.team}</span>
@@ -1418,7 +1428,7 @@ function renderMyTeam() {
           const vc = t.vorp >= 0 ? '' : ' neg';
           return `<div class="target-row">
             <span class="target-vorp${vc}">${t.vorp >= 0 ? '+' : ''}${v}</span>
-            <span class="target-name">${t.name}</span>
+            <span class="target-name">${esc(t.name)}</span>
             <span class="team-badge ${getTeamClass(t.team)} target-team">${t.team}</span>
           </div>`;
         }).join('')
@@ -1427,7 +1437,7 @@ function renderMyTeam() {
     const picks = pickedByPos[pos] || [];
     const pickedNamesHtml = picks.length
       ? '<div style="font-size:12px;margin-top:4px;line-height:1.7">' +
-          picks.map(p => `<span style="color:var(--text);font-weight:600;display:block">${p.name}</span>`).join('') +
+          picks.map(p => `<span style="color:var(--text);font-weight:600;display:block">${esc(p.name)}</span>`).join('') +
         '</div>'
       : '';
 
@@ -1449,7 +1459,7 @@ function renderMyTeam() {
           const v = p.vorp.toFixed(1);
           return `<span class="pick-chip">
             <span class="pick-pos">${pos}</span>
-            ${p.name}
+            ${esc(p.name)}
             <span class="pick-vorp">${p.vorp >= 0 ? '+' : ''}${v}</span>
           </span>`;
         }).join('');
@@ -1598,7 +1608,7 @@ document.querySelectorAll('#team-size-filters .pos-btn').forEach(b => {
 
 const note = document.getElementById('data-note');
 if (window.PLAYER_DATA) {
-  note.innerHTML = `✅ Live data from nrlsupercoachstats.com &mdash; last updated <strong>${window.PLAYER_DATA.generated}</strong>`;
+  note.innerHTML = `✅ Live data from nrlsupercoachstats.com &mdash; last updated <strong>${esc(window.PLAYER_DATA.generated)}</strong>`;
   note.style.borderLeftColor = 'var(--green)';
 } else {
   note.innerHTML = '⚠️ Using built-in sample data. Run <strong>update-players.ps1</strong> then reload for real stats.';
